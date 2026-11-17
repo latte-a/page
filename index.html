@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>칼퇴할겨! - 초경량 화려한 네온 축하 페이지</title>
+
+  <!-- Google Fonts: 강렬하고 두꺼운 'Black Han Sans' 및 보조 폰트 'Noto Sans KR' -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@700;900&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ==========================================================================
+       1. 기본 리셋 및 고성능 다크 코스믹 퍼플 배경
+       ========================================================================== */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #0b061d;
+      font-family: 'Noto Sans KR', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+      cursor: pointer;
+    }
+
+    /* 전체 무대 컨테이너 */
+    #stage {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at 50% 50%, #1e0d3b 0%, #120829 55%, #0b061d 100%);
+      overflow: hidden;
+    }
+
+    /* ==========================================================================
+       2. GPU 가속 경량 선버스트(광선) & 후광 (filter: blur / mix-blend-mode 제거)
+       ========================================================================== */
+    .sunburst-wrapper {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 160vmax;
+      height: 160vmax;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      z-index: 1;
+      opacity: 0.28;
+      will-change: transform;
+    }
+
+    .sunburst {
+      width: 100%;
+      height: 100%;
+      background: repeating-conic-gradient(
+        from 0deg,
+        rgba(255, 215, 0, 0.25) 0deg 10deg,
+        transparent 10deg 20deg,
+        rgba(255, 0, 128, 0.2) 20deg 30deg,
+        transparent 30deg 40deg
+      );
+      mask-image: radial-gradient(circle, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0.35) 35%, transparent 62%);
+      -webkit-mask-image: radial-gradient(circle, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0.35) 35%, transparent 62%);
+      animation: spinSunburst 28s linear infinite;
+    }
+
+    @keyframes spinSunburst {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    /* 정적 그라데이션 후광 (블러 필터 대신 부드러운 방사형 그라데이션 사용) */
+    .center-halo {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: min(90vw, 720px);
+      height: min(55vw, 420px);
+      transform: translate(-50%, -50%);
+      background: radial-gradient(
+        ellipse at center,
+        rgba(255, 215, 0, 0.26) 0%,
+        rgba(255, 0, 128, 0.18) 42%,
+        rgba(0, 240, 255, 0.08) 65%,
+        transparent 78%
+      );
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    /* ==========================================================================
+       3. 경량 HTML5 캔버스 (최대 120개 파티클 제한)
+       ========================================================================== */
+    #fx-canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 15;
+    }
+
+    /* ==========================================================================
+       4. 초경량 60fps 3D 메탈릭 골드 & 네온 "칼퇴할겨!" 타이포그래피
+       ========================================================================== */
+    .hero-wrapper {
+      position: relative;
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+      text-align: center;
+    }
+
+    /* 상단 네온 배지 */
+    .top-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      padding: 0.45rem 1.25rem;
+      margin-bottom: clamp(0.9rem, 2.5vh, 1.5rem);
+      border-radius: 9999px;
+      background: rgba(24, 12, 52, 0.85);
+      border: 1.5px solid rgba(255, 215, 0, 0.75);
+      box-shadow: 0 0 14px rgba(255, 215, 0, 0.35);
+      color: #ffe875;
+      font-weight: 900;
+      font-size: clamp(0.78rem, 2vw, 0.98rem);
+      letter-spacing: 0.12em;
+    }
+
+    /* GPU 가속 부유 및 펄스 애니메이션 컨테이너 */
+    .title-float-box {
+      position: relative;
+      display: inline-block;
+      will-change: transform;
+      animation: smoothFloat 2.8s ease-in-out infinite alternate;
+    }
+
+    /* 클릭/축포 시 가볍게 통! 튀어오르는 클래스 */
+    .title-float-box.pop-boost {
+      animation: popBounce 0.45s cubic-bezier(0.22, 1.5, 0.36, 1) forwards;
+    }
+
+    @keyframes smoothFloat {
+      0% { transform: translateY(0px) scale(1); }
+      100% { transform: translateY(-8px) scale(1.03); }
+    }
+
+    @keyframes popBounce {
+      0% { transform: translateY(0px) scale(0.92); }
+      45% { transform: translateY(-12px) scale(1.12); }
+      100% { transform: translateY(0px) scale(1); }
+    }
+
+    /* 3D 입체 레이어 공통 스타일 */
+    .mega-text {
+      font-family: 'Black Han Sans', 'Noto Sans KR', 'Malgun Gothic', sans-serif;
+      font-size: clamp(3.5rem, 11vw, 7.5rem);
+      line-height: 1.1;
+      letter-spacing: -0.01em;
+      white-space: nowrap;
+      display: block;
+    }
+
+    /* 뒷면 3D 입체 압출 & 단일 네온 글로우 레이어 (4단 최적화된 그림자) */
+    .mega-text-shadow {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      color: transparent;
+      text-shadow:
+        0 3px 0 #ff8c00,
+        0 6px 0 #e60073,
+        0 9px 0 #5900b3,
+        0 14px 26px rgba(255, 0, 128, 0.75);
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    /* 최상단 메탈릭 골드 & 레인보우 그라데이션 텍스트 */
+    .mega-text-front {
+      position: relative;
+      z-index: 2;
+      background: linear-gradient(
+        115deg,
+        #fff7ad 0%,
+        #ffd700 18%,
+        #ff5ca8 36%,
+        #00f5ff 52%,
+        #ffe600 68%,
+        #ff2a85 84%,
+        #fff7ad 100%
+      );
+      background-size: 220% 220%;
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: holographicShift 3.6s linear infinite;
+    }
+
+    @keyframes holographicShift {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    /* 텍스트 주변 경량 이모지 악센트 */
+    .accent-emoji {
+      position: absolute;
+      font-size: clamp(1.6rem, 4vw, 2.8rem);
+      pointer-events: none;
+      z-index: 3;
+      animation: emojiPulse 1.8s ease-in-out infinite alternate;
+    }
+
+    .emoji-left {
+      top: -18%;
+      left: -6%;
+      animation-delay: 0s;
+    }
+
+    .emoji-right {
+      bottom: -14%;
+      right: -6%;
+      animation-delay: 0.7s;
+    }
+
+    @keyframes emojiPulse {
+      0% { transform: scale(0.9) rotate(-8deg); }
+      100% { transform: scale(1.12) rotate(8deg); }
+    }
+
+    /* ==========================================================================
+       5. 깔끔하고 미니멀한 하단 플로팅 컨트롤 바 (GIF 녹화에도 방해되지 않음)
+       ========================================================================== */
+    .bottom-hud {
+      position: fixed;
+      bottom: clamp(14px, 3.5vh, 28px);
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.45rem 0.85rem;
+      border-radius: 9999px;
+      background: rgba(16, 9, 38, 0.82);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+      white-space: nowrap;
+    }
+
+    .btn-action {
+      border: none;
+      border-radius: 9999px;
+      padding: 0.4rem 0.9rem;
+      font-family: 'Noto Sans KR', sans-serif;
+      font-weight: 800;
+      font-size: clamp(0.75rem, 2vw, 0.85rem);
+      cursor: pointer;
+      transition: transform 0.12s ease, opacity 0.15s ease;
+    }
+
+    .btn-action:active {
+      transform: scale(0.94);
+    }
+
+    .btn-boom {
+      background: linear-gradient(135deg, #ffd700 0%, #ff007f 100%);
+      color: #ffffff;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+    }
+
+    .btn-toggle {
+      background: rgba(255, 255, 255, 0.12);
+      color: #e2e8f0;
+    }
+  </style>
+</head>
+<body>
+  <main id="stage" aria-label="칼퇴할겨 축하 무대">
+    <!-- 경량 회전 선버스트 후광 -->
+    <div class="sunburst-wrapper">
+      <div class="sunburst"></div>
+    </div>
+
+    <!-- 정적 네온 후광 -->
+    <div class="center-halo"></div>
+
+    <!-- 메인 타이포그래피 영역 -->
+    <section class="hero-wrapper">
+      <div class="top-badge">✨ TODAY'S MISSION COMPLETE ✨</div>
+
+      <div id="title-box" class="title-float-box">
+        <span class="accent-emoji emoji-left" aria-hidden="true">🎉</span>
+        <span class="accent-emoji emoji-right" aria-hidden="true">🚀</span>
+
+        <!-- 3D 입체 압출 및 글로우 레이어 -->
+        <span class="mega-text mega-text-shadow" aria-hidden="true">칼퇴할겨!</span>
+        <!-- 최상단 홀로그램 골드 & 네온 레인보우 텍스트 -->
+        <h1 class="mega-text mega-text-front">칼퇴할겨!</h1>
+      </div>
+    </section>
+
+    <!-- 경량 컨페티 및 폭죽 캔버스 -->
+    <canvas id="fx-canvas"></canvas>
+  </main>
+
+  <!-- 미니멀 하단 컨트롤 바 -->
+  <div class="bottom-hud" id="hud-bar">
+    <button type="button" id="btn-fire" class="btn-action btn-boom">🎉 축포 발사!</button>
+    <button type="button" id="btn-auto" class="btn-action btn-toggle" aria-pressed="true">✨ 자동축포 ON</button>
+    <button type="button" id="btn-sound" class="btn-action btn-toggle" aria-pressed="false">🔇 효과음 OFF</button>
+  </div>
+
+  <script>
+    /**
+     * ============================================================================
+     * 60fps 초경량 인터랙티브 컨페티 & 폭죽 엔진 (최대 120개 파티클 상한 적용)
+     * ============================================================================
+     */
+    (function () {
+      const stage = document.getElementById('stage');
+      const titleBox = document.getElementById('title-box');
+      const canvas = document.getElementById('fx-canvas');
+      const ctx = canvas.getContext('2d');
+      const btnFire = document.getElementById('btn-fire');
+      const btnAuto = document.getElementById('btn-auto');
+      const btnSound = document.getElementById('btn-sound');
+      const hudBar = document.getElementById('hud-bar');
+
+      let width = 0;
+      let height = 0;
+
+      // 성능 보장을 위한 최대 파티클 개수 엄격 제한
+      const MAX_PARTICLES = 120;
+      const particles = [];
+
+      // 화려한 메탈릭 골드 & 네온 팔레트
+      const COLORS = [
+        '#FFD700', // 골드
+        '#FFF275', // 라이트 골드
+        '#FF007F', // 네온 마젠타
+        '#00F5FF', // 일렉트릭 시안
+        '#FF9E00', // 선셋 오렌지
+        '#A855F7', // 네온 퍼플
+        '#FFFFFF'  // 화이트
+      ];
+
+      // ==========================================================================
+      // 1. 경량 Web Audio API 축하 벨 효과음 (기본 OFF, 원할 때 ON)
+      // ==========================================================================
+      let audioCtx = null;
+      let soundEnabled = false;
+      let autoBurstEnabled = true;
+
+      function playChime() {
+        if (!soundEnabled) return;
+        try {
+          if (!audioCtx) {
+            const AudioCtx = window.AudioContext || window.webkitAudioContext;
+            if (AudioCtx) audioCtx = new AudioCtx();
+          }
+          if (!audioCtx) return;
+          if (audioCtx.state === 'suspended') audioCtx.resume();
+
+          const now = audioCtx.currentTime;
+          const notes = [523.25, 659.25, 783.99, 1046.5];
+
+          notes.forEach((freq, i) => {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'triangle';
+            const t = now + i * 0.04;
+            osc.frequency.setValueAtTime(freq, t);
+
+            gain.gain.setValueAtTime(0.001, t);
+            gain.gain.linearRampToValueAtTime(0.07, t + 0.01);
+            gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.28);
+
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start(t);
+            osc.stop(t + 0.3);
+          });
+        } catch (e) {
+          // 오디오 제한 시 무시
+        }
+      }
+
+      // ==========================================================================
+      // 2. 반응형 캔버스 리사이즈 (고해상도 과부하 방지를 위해 DPR 1.5 상한)
+      // ==========================================================================
+      function resizeCanvas() {
+        width = window.innerWidth;
+        height = window.innerHeight;
+        const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+
+        canvas.width = Math.floor(width * dpr);
+        canvas.height = Math.floor(height * dpr);
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      }
+
+      // ==========================================================================
+      // 3. 경량 컨페티 & 불꽃 파티클 생성 (shadowBlur 없이 깔끔한 도형 렌더링)
+      // ==========================================================================
+      function spawnBurst(x, y, count = 42) {
+        // 상한선 초과 시 오래된 파티클 먼저 제거하여 항상 120개 이하 유지
+        if (particles.length + count > MAX_PARTICLES) {
+          particles.splice(0, particles.length + count - MAX_PARTICLES);
+        }
+
+        for (let i = 0; i < count; i++) {
+          const angle = (Math.PI * 2 * i) / count + (Math.random() - 0.5) * 0.35;
+          const speed = Math.random() * 5.8 + 2.2;
+          const isConfetti = i % 2 === 0;
+
+          particles.push({
+            x,
+            y,
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed - (isConfetti ? 1.5 : 0),
+            gravity: isConfetti ? 0.09 : 0.11,
+            friction: 0.96,
+            size: isConfetti ? Math.random() * 6 + 5 : Math.random() * 2.5 + 2,
+            isConfetti,
+            rotation: Math.random() * Math.PI * 2,
+            vRot: (Math.random() - 0.5) * 0.22,
+            color: COLORS[Math.floor(Math.random() * COLORS.length)],
+            alpha: 1,
+            decay: Math.random() * 0.014 + 0.011
+          });
+        }
+      }
+
+      function triggerPopAnimation() {
+        titleBox.classList.remove('pop-boost');
+        void titleBox.offsetWidth;
+        titleBox.classList.add('pop-boost');
+      }
+
+      function fireCelebration(x, y) {
+        triggerPopAnimation();
+        playChime();
+        spawnBurst(x, y, 45);
+      }
+
+      // ==========================================================================
+      // 4. 초고속 60fps 렌더 루프 (shadowBlur / 트레일 연산 제거)
+      // ==========================================================================
+      function animate() {
+        ctx.clearRect(0, 0, width, height);
+
+        for (let i = particles.length - 1; i >= 0; i--) {
+          const p = particles[i];
+          p.vx *= p.friction;
+          p.vy = p.vy * p.friction + p.gravity;
+          p.x += p.vx;
+          p.y += p.vy;
+          p.alpha -= p.decay;
+
+          if (p.alpha <= 0.02 || p.y > height + 20) {
+            particles.splice(i, 1);
+            continue;
+          }
+
+          ctx.globalAlpha = p.alpha;
+          ctx.fillStyle = p.color;
+
+          if (p.isConfetti) {
+            p.rotation += p.vRot;
+            ctx.save();
+            ctx.translate(p.x, p.y);
+            ctx.rotate(p.rotation);
+            ctx.fillRect(-p.size * 0.5, -p.size * 0.3, p.size, p.size * 0.6);
+            ctx.restore();
+          } else {
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+
+        ctx.globalAlpha = 1;
+        requestAnimationFrame(animate);
+      }
+
+      // ==========================================================================
+      // 5. 이벤트 리스너 및 컨트롤
+      // ==========================================================================
+      stage.addEventListener('pointerdown', (e) => {
+        if (hudBar.contains(e.target)) return;
+        fireCelebration(e.clientX, e.clientY);
+      });
+
+      btnFire.addEventListener('click', (e) => {
+        e.stopPropagation();
+        triggerPopAnimation();
+        playChime();
+        spawnBurst(width * 0.35, height * 0.38, 36);
+        spawnBurst(width * 0.65, height * 0.38, 36);
+      });
+
+      btnAuto.addEventListener('click', (e) => {
+        e.stopPropagation();
+        autoBurstEnabled = !autoBurstEnabled;
+        btnAuto.textContent = autoBurstEnabled ? '✨ 자동축포 ON' : '⏸️ 자동축포 OFF';
+        btnAuto.setAttribute('aria-pressed', String(autoBurstEnabled));
+      });
+
+      btnSound.addEventListener('click', (e) => {
+        e.stopPropagation();
+        soundEnabled = !soundEnabled;
+        btnSound.textContent = soundEnabled ? '🔊 효과음 ON' : '🔇 효과음 OFF';
+        btnSound.setAttribute('aria-pressed', String(soundEnabled));
+        if (soundEnabled) playChime();
+      });
+
+      window.addEventListener('keydown', (e) => {
+        if (e.code === 'Space' || e.code === 'Enter') {
+          e.preventDefault();
+          fireCelebration(width * 0.5, height * 0.4);
+        }
+      });
+
+      window.addEventListener('resize', resizeCanvas);
+
+      // 부드러운 주기적 자동 축하 폭죽 (2.4초 간격)
+      setInterval(() => {
+        if (!autoBurstEnabled || document.hidden) return;
+        const rx = width * (0.22 + Math.random() * 0.56);
+        const ry = height * (0.22 + Math.random() * 0.45);
+        spawnBurst(rx, ry, 34);
+      }, 2400);
+
+      // 초기 로드 시 실행
+      window.onload = function () {
+        resizeCanvas();
+        animate();
+
+        setTimeout(() => {
+          triggerPopAnimation();
+          spawnBurst(width * 0.5, height * 0.36, 52);
+        }, 200);
+      };
+    })();
+  </script>
+</body>
+</html>
